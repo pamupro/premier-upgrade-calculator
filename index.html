@@ -1,646 +1,1007 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Premier-only Room Upgrade Calculator</title>
-<style>
-  :root{
-    --bg1:#0f111a;
-    --bg2:#141726;
-    --panel:#1a1e2e;
-    --panel-2:#202641;
-    --muted:#96a0b5;
-    --text:#e9ecf1;
-    --accent:#6ee7ff;
-    --accent-2:#7c6cff;
-    --ok:#34d399;
-    --warn:#f59e0b;
-    --danger:#ef4444;
-    --shadow: 0 10px 25px rgba(0,0,0,.35);
-    --radius:16px;
-  }
-
-  *{ box-sizing:border-box; }
-  html,body{ height:100%; background: radial-gradient(1200px 800px at 10% 0%, #15182a 0%, var(--bg1) 55%) fixed; color:var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; }
-  h1{ font-size: clamp(1.25rem, 1rem + 1.2vw, 2rem); margin:0 0 .5rem; font-weight:700; letter-spacing:.2px;}
-  h2{ font-size:1rem; font-weight:700; margin:.25rem 0 .75rem; color:#f1f5f9;}
-  p, label, small{ color:var(--muted); }
-  a{ color: var(--accent); text-decoration: none; }
-  .wrap{ max-width:1100px; margin: 24px auto; padding: clamp(12px,2vw,22px); }
-  .grid{
-    display:grid;
-    grid-template-columns: 1.1fr 1fr;
-    gap:18px;
-  }
-  @media (max-width:980px){ .grid{ grid-template-columns: 1fr; } }
-
-  .card{
-    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
-    border:1px solid rgba(255,255,255,.06);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: clamp(14px, 1.6vw, 22px);
-  }
-  .header{
-    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;
-  }
-  .pill{
-    display:inline-flex; align-items:center; gap:8px;
-    background: linear-gradient(90deg, rgba(52,211,153,.18), rgba(16,185,129,.12));
-    border:1px solid rgba(52,211,153,.35);
-    color:#d1fae5; padding:6px 10px; border-radius:999px; font-size:.8rem; font-weight:600;
-  }
-
-  /* Forms */
-  .row{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
-  @media (max-width:640px){ .row{ grid-template-columns: 1fr; } }
-  .field{ display:flex; flex-direction:column; gap:6px; }
-  .field label{ font-size:.9rem; color:#cbd5e1; }
-  .hint{ font-size:.78rem; color:var(--muted); }
-  input[type="text"], input[type="number"], input[type="date"], select{
-    background:#13172a; color:#fff; border:1px solid rgba(255,255,255,.12); border-radius:12px;
-    padding:12px 12px; outline:none; transition:border-color .15s ease, box-shadow .15s ease;
-    width:100%;
-  }
-  input[type="date"]::-webkit-calendar-picker-indicator{ filter: invert(1) opacity(.8); }
-  select option{ background:#111527; color:#fff; }
-  input[type="number"]{ -moz-appearance:textfield; }
-  input::-webkit-outer-spin-button, input::-webkit-inner-spin-button{ -webkit-appearance: none; margin: 0; }
-
-  .stack{ display:flex; flex-direction:column; gap:12px; }
-
-  /* Radios aligned nicely */
-  .radio-row{
-    display:grid;
-    grid-template-columns: auto 1fr;
-    align-items:center;
-    gap:10px 14px;
-  }
-  .radio-row + .radio-row{ margin-top:8px; }
-  input[type="radio"]{
-    width:18px; height:18px; accent-color: var(--accent-2);
-  }
-  .mode-card{
-    background:#0f1427; border:1px dashed rgba(255,255,255,.12); border-radius:12px; padding:12px;
-  }
-
-  /* Sliders */
-  .slider-wrap{
-    display:grid; grid-template-columns: 1fr auto; align-items:center; gap:10px;
-    background:#0e1324; border:1px solid rgba(255,255,255,.08); padding:10px; border-radius:12px;
-  }
-  input[type="range"]{ width:100%; }
-  .tag{
-    font-variant-numeric: tabular-nums; background: #1e253f; border:1px solid rgba(255,255,255,.1);
-    padding:6px 10px; border-radius: 10px; color:#e5e7eb; font-weight:600; font-size:.85rem;
-  }
-
-  /* Buttons */
-  .actions{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:8px; }
-  .btn{
-    background: linear-gradient(135deg, var(--accent-2), #3b82f6);
-    color:white; border:0; border-radius:12px; padding:12px 14px; font-weight:700; cursor:pointer;
-    box-shadow: 0 6px 20px rgba(62,80,200,.35);
-  }
-  .btn.secondary{
-    background: linear-gradient(135deg, #1f2937, #0b1022);
-    border:1px solid rgba(255,255,255,.12);
-    box-shadow:none;
-  }
-  .btn:active{ transform: translateY(1px); }
-
-  /* Results */
-  .results{
-    display:grid; grid-template-columns: repeat(2, 1fr); gap:12px;
-  }
-  @media (max-width:640px){ .results{ grid-template-columns: 1fr; } }
-  .result-kpi{
-    background:#0b1022; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px;
-  }
-  .result-kpi h3{ margin:0; font-size: .95rem; color:#cbd5e1; font-weight:600; }
-  .result-kpi .value{
-    font-size: clamp(1.05rem, .8rem + .8vw, 1.4rem);
-    font-weight:800; letter-spacing:.2px; margin-top:4px;
-  }
-  .muted{ color:var(--muted); font-size:.85rem; }
-  .warning{ color:var(--warn); }
-  .danger{ color:var(--danger); }
-  .ok{ color:var(--ok); }
-
-  .note{ font-size:.8rem; color:#cbd5e1; }
-  .tiny{ font-size:.75rem; color:var(--muted); }
-  .divider{ height:1px; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); margin:10px 0; border:0; }
-
-  /* Footer */
-  .footer{
-    display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px;
-  }
-
-  /* Print tweaks */
-  @media print{
-    .btn, .actions{ display:none !important; }
-    body{ background:white; color:black; }
-    .card{ box-shadow:none; border:1px solid #ccc; background:white; }
-    .pill{ border:1px solid #16a34a; color:#064e3b; background:#dcfce7; }
-  }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Room Upgrade Calculator</title>
+  <style>
+    :root{
+      --bg:#0b1220; --card:#111a2b; --muted:#93a0b8; --text:#e9f0ff; --accent:#4ea8ff; --ok:#39d353; --warn:#ffb020; --bad:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial,emoji;color:var(--text);background:linear-gradient(180deg,#0b1220,#0e1628 20%,#0b1220 100%) fixed;}
+    .wrap{max-width:1100px;margin:30px auto;padding:20px}
+    h1{font-size:clamp(22px,3vw,30px);margin:0 0 14px}
+    p.lead{color:var(--muted);margin:0 0 20px}
+    .grid{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+    @media (max-width:980px){.grid{grid-template-columns:1fr}}
+    .card{background:rgba(255,255,255,.04);backdrop-filter: blur(6px);border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:16px}
+    .card h2{margin:0 0 10px;font-size:18px;color:#cfe2ff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:700px){.row{grid-template-columns:1fr}}
+    label{display:block;font-size:13px;color:var(--muted);margin:8px 0 6px}
+    input, select{width:100%;padding:12px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:var(--text);}
+    input[type="date"]{padding:10px 12px}
+    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{appearance:none;border:none;padding:11px 14px;border-radius:10px;font-weight:600;color:#031023;background:var(--accent);cursor:pointer}
+    button.secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.12)}
+    button.ghost{background:transparent;color:var(--muted);border:1px dashed rgba(255,255,255,.2)}
+    .result{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width:900px){.result{grid-template-columns:1fr}}
+    .stat{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px}
+    .stat small{display:block;color:var(--muted)}
+    .stat strong{font-size:22px}
+    .mono{font-variant-numeric: tabular-nums; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+    .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);margin:12px 0}
+    .radio-row{display:flex;gap:10px;flex-wrap:wrap}
+    .note{font-size:12px;color:var(--muted)}
+    .highlight{color:#d9f99d}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;background:rgba(217,249,157,.08);border:1px solid rgba(217,249,157,.24);color:#d9f99d;font-size:12px}
+    .totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    @media (max-width:700px){.totals{grid-template-columns:1fr}}
+    .footer{opacity:.8;font-size:12px;margin-top:10px}
+    .warn{color:var(--warn)}
+    .good{color:var(--ok)}
+    .bad{color:var(--bad)}
+    .link{color:#9bd0ff;text-decoration:underline;cursor:pointer}
+    select, option{color:#fff;background:rgba(20,28,44,.95);} 
+    .chip input{vertical-align:middle;margin:0 6px 0 0}
+    .inline label{display:inline-flex;align-items:center;gap:6px}
+  </style>
 </head>
 <body>
   <div class="wrap">
-    <div class="header">
-      <h1>Premier-only Room Upgrade Calculator</h1>
-      <span class="pill" id="commissionPill">Premier upgrade — commission eligible • 10%</span>
-    </div>
-    <p class="hint">Receptionist tool to price upgrades into <strong>Premier</strong> rooms only, apply optional manager discount, and compute commission. Dark, modern, mobile-friendly UI. Print/PDF ready.</p>
+    <h1>Room Upgrade Calculator <span class="badge">No login · No database</span></h1>
+    <p class="lead">Calculate guest upgrade extra, discount, and your 10% commission. Works on mobile. You can base the price on your internal upgrade ladder <em>or</em> on the difference between public rates.</p>
 
     <div class="grid">
-      <!-- LEFT: Inputs -->
-      <section class="card">
-        <h2>Stay &amp; Rooms</h2>
+      <div class="card">
+        <h2>Stay Details</h2>
         <div class="row">
-          <div class="field">
-            <label for="checkin">Check-in</label>
+          <div>
+            <label>Check‑in</label>
             <input type="date" id="checkin" />
-            <small class="tiny">Past dates disabled</small>
           </div>
-          <div class="field">
-            <label for="checkout">Check-out</label>
+          <div>
+            <label>Check‑out</label>
             <input type="date" id="checkout" />
-            <small class="tiny">Auto-updates from nights, editable</small>
           </div>
         </div>
-
-        <div class="row" style="margin-top:10px;">
-          <div class="field">
-            <label for="nights">Nights</label>
-            <input type="number" id="nights" min="1" step="1" />
-            <small class="tiny">Auto-calculated from dates (editable fallback)</small>
-          </div>
-          <div class="field">
-            <label>&nbsp;</label>
-            <div class="actions">
-              <button class="btn secondary" id="syncFromDates">Recalculate from dates</button>
-              <button class="btn secondary" id="syncFromNights">Set dates from nights</button>
-            </div>
-          </div>
-        </div>
-
-        <hr class="divider">
-
         <div class="row">
-          <div class="field">
-            <label for="fromRoom">From (Booked room)</label>
+          <div>
+            <label>Nights (auto)</label>
+            <input id="nights" type="number" min="1" value="5" />
+          </div>
+          <div>
+            <label>Currency</label>
+            <select id="currency"><option value="GBP">GBP £</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Booked Room</label>
             <select id="fromRoom">
-              <!-- Non-premier only -->
-              <option value="CS">Classic Single (CS)</option>
-              <option value="CD">Classic Double (CD)</option>
-              <option value="CT">Classic Twin (CT)</option>
-              <option value="DD">Deluxe Double (DD)</option>
-              <option value="CTRP">Classic Triple (CTRP)</option>
-              <option value="CQUAD">Classic Quad (CQUAD)</option>
-              <option value="SUITE">Suite (SUITE)</option>
+              <option>Classic Double</option>
+              <option>Classic Single</option>
+              <option>Standard Double</option>
             </select>
-            <small class="tiny">Only non-Premier appear here</small>
           </div>
-
-          <div class="field">
-            <label for="toRoom">To (Target Premier)</label>
+          <div>
+            <label>Upgrade To</label>
             <select id="toRoom">
-              <!-- Premier only -->
-              <option value="PS">Premier Single (PS)</option>
-              <option value="PD">Premier Double (PD)</option>
-              <option value="PTWN">Premier Twin (PTWN)</option>
-              <option value="PTRP">Premier Triple (PTRP)</option>
-              <option value="PQUAD">Premier Quad (PQUAD)</option>
-              <option value="PK">Premier King (PK)</option>
+              <option>Premier Double</option>
+              <option>Premier Single</option>
+              <option>Deluxe Double</option>
             </select>
-            <small class="tiny">White text on dark background ensured</small>
           </div>
         </div>
-
-        <hr class="divider">
-
-        <h2>Pricing Bases</h2>
-        <!-- Modes -->
-        <div class="stack">
-          <!-- Public rate difference -->
-          <div class="mode-card">
-            <div class="radio-row">
-              <input type="radio" name="mode" id="modePublic" value="public" checked />
-              <label for="modePublic"><strong>Public rate difference</strong> (default)</label>
-            </div>
-            <div class="row" style="margin-top:10px;">
-              <div class="field">
-                <label for="bookedTotal">Booked total (for stay)</label>
-                <input type="number" id="bookedTotal" min="0" step="0.01" inputmode="decimal" />
-              </div>
-              <div class="field">
-                <label for="publicTargetTotal">Public target total (for stay)</label>
-                <input type="number" id="publicTargetTotal" min="0" step="0.01" inputmode="decimal" />
-              </div>
-            </div>
-            <div class="slider-wrap" style="margin-top:10px;">
-              <div class="field">
-                <label for="discountPublic">Manager Discount %</label>
-                <input type="range" min="0" max="50" step="1" id="discountPublic" />
-              </div>
-              <div class="tag"><span id="discountPublicVal">0</span>%</div>
-            </div>
-            <div class="actions">
-              <button class="btn" id="fetchLive">Fetch live (Booking.com API)</button>
-              <small class="tiny">Calls <code>/api/booking?checkin=YYYY-MM-DD&amp;checkout=YYYY-MM-DD&amp;adults=2</code></small>
-            </div>
-          </div>
-
-          <!-- Fixed hotel rate -->
-          <div class="mode-card">
-            <div class="radio-row">
-              <input type="radio" name="mode" id="modeFixed" value="fixed" />
-              <label for="modeFixed"><strong>Fixed hotel rate (£/night)</strong> via desk mapping</label>
-            </div>
-            <div class="row" style="margin-top:10px;">
-              <div class="field">
-                <label for="fixedPerNight">Fixed upgrade (£/night)</label>
-                <input type="number" id="fixedPerNight" readonly />
-                <small id="fixedNote" class="tiny"></small>
-              </div>
-              <div class="field">
-                <label>&nbsp;</label>
-                <div class="slider-wrap">
-                  <div class="field">
-                    <label for="discountFixed">Manager Discount %</label>
-                    <input type="range" min="0" max="50" step="1" id="discountFixed" />
-                  </div>
-                  <div class="tag"><span id="discountFixedVal">0</span>%</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Custom -->
-          <div class="mode-card">
-            <div class="radio-row">
-              <input type="radio" name="mode" id="modeCustom" value="custom" />
-              <label for="modeCustom"><strong>Custom</strong> (enter final extra)</label>
-            </div>
-            <div class="row" style="margin-top:10px;">
-              <div class="field">
-                <label for="customFinalExtra">Final extra (total)</label>
-                <input type="number" id="customFinalExtra" min="0" step="0.01" inputmode="decimal" />
-              </div>
-              <div class="field">
-                <label class="hint">Tip</label>
-                <div class="note">Use this if Manager decides a simple, all-in extra charge.</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="actions" style="margin-top:14px;">
-          <button class="btn secondary" id="resetDefaults">Reset to defaults</button>
-        </div>
-      </section>
-
-      <!-- RIGHT: Results -->
-      <section class="card">
-        <h2>Results</h2>
-        <div class="results">
-          <div class="result-kpi">
-            <h3>Extra before discount</h3>
-            <div class="value" id="extraBefore">£0.00</div>
-            <div class="muted">= base difference or fixed×nights</div>
-          </div>
-          <div class="result-kpi">
-            <h3>Discount applied</h3>
-            <div class="value" id="discountApplied">£0.00</div>
-            <div class="muted">Manager % off the extra</div>
-          </div>
-          <div class="result-kpi">
-            <h3>Guest pays (final extra)</h3>
-            <div class="value" id="finalExtra">£0.00</div>
-            <div class="muted">Per night: <span id="finalExtraPerNight">£0.00</span></div>
-          </div>
-          <div class="result-kpi">
-            <h3>Your commission (10%)</h3>
-            <div class="value" id="commission">£0.00</div>
-            <div class="muted">Per night: <span id="commissionPerNight">£0.00</span></div>
-          </div>
-          <div class="result-kpi">
-            <h3>Effective target total</h3>
-            <div class="value" id="effectiveTarget">£0.00</div>
-            <div class="muted">= Booked total + final extra</div>
-          </div>
-          <div class="result-kpi">
-            <h3>Savings vs public target</h3>
-            <div class="value" id="savings">£0.00</div>
-            <div class="muted">Per night: <span id="savingsPerNight">£0.00</span></div>
-          </div>
-        </div>
-
-        <hr class="divider">
-
         <div class="row">
-          <div class="field">
-            <label>Commission rule</label>
-            <div class="note">10% applies because the target is a Premier category (<span id="targetCode">—</span>).</div>
-            <small class="tiny" id="noCommissionNote" style="display:none;">No commission for non-Premier.</small>
+          <div>
+            <label>Booked total for stay</label>
+            <input id="bookedTotal" type="number" step="0.01" value="491" />
           </div>
-          <div class="field">
-            <label>Per-night breakdown</label>
-            <div class="note">
-              Extra/night: <strong id="extraBeforePerNight">£0.00</strong> • Discount/night: <strong id="discountPerNight">£0.00</strong>
+          <div>
+            <label>Booked average per night (auto)</label>
+            <input id="bookedPerNight" type="number" step="0.01" value="" disabled />
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <h2>How to price the upgrade?</h2>
+        <div class="radio-row">
+          <label class="pill"><input type="radio" name="basis" value="ladder" checked /> &nbsp; Internal ladder (£/night)</label>
+          <label class="pill"><input type="radio" name="basis" value="difference" /> &nbsp; Public rate difference</label>
+          <label class="pill"><input type="radio" name="basis" value="custom" /> &nbsp; Enter final extra directly</label>
+        </div>
+
+        <div id="basis-ladder" class="basis card" style="margin-top:10px;">
+          <h2>Internal upgrade ladder</h2>
+          <div class="row">
+            <div>
+              <label>Upgrade price (£/night) for <span id="ladderLabel">Classic → Premier</span></label>
+              <input id="ladderPerNight" type="number" step="0.01" value="40" />
+              <div class="note">Tip: Your hotel might set CD→PD at £70/night, but with manager discount best price is £40/night. Enter what you <em>intend to charge</em> per night.</div>
+            </div>
+            <div>
+              <label>Discount (%) on ladder price (optional)</label>
+              <input id="ladderDiscountPct" type="number" min="0" max="100" step="1" value="0" />
             </div>
           </div>
         </div>
 
-        <div class="footer">
-          <div class="actions">
-            <button class="btn" id="printBtn">Print / Save PDF</button>
+        <div id="basis-difference" class="basis card" style="display:none;margin-top:10px;">
+          <h2>Public rate difference</h2>
+          <div class="row">
+            <div>
+              <label>Public Premier total for stay</label>
+              <input id="publicPremierTotal" type="number" step="0.01" value="811" />
+            </div>
+            <div>
+              <label>Public Premier average per night (auto)</label>
+              <input id="publicPremierPerNight" type="number" step="0.01" disabled />
+            </div>
           </div>
-          <small class="tiny">All values are estimates. Verify against PMS before charging.</small>
+          <div class="row">
+            <div>
+              <label>Discount (%) off the difference</label>
+              <input id="diffDiscountPct" type="number" min="0" max="100" step="1" value="0" />
+            </div>
+            <div>
+              <label>Show link to Booking.com (optional)</label>
+              <input id="bookingUrl" type="url" placeholder="https://www.booking.com/..." />
+            </div>
+          </div>
         </div>
-      </section>
+
+        <div id="basis-custom" class="basis card" style="display:none;margin-top:10px;">
+          <h2>Enter final extra directly</h2>
+          <div class="row">
+            <div>
+              <label>Guest extra to pay (total)</label>
+              <input id="customExtra" type="number" step="0.01" value="200" />
+            </div>
+            <div>
+              <label>Notes</label>
+              <input id="customNote" type="text" placeholder="e.g., manager approved, busy night" />
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="calcBtn">Calculate</button>
+          <button id="resetBtn" class="secondary" type="button">Reset</button>
+          <button id="printBtn" class="ghost" type="button">Print / Save PDF</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Results</h2>
+        <div class="result">
+          <div class="stat">
+            <small>Extra before discount (basis)</small>
+            <strong class="mono" id="extraBefore">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small>Discount applied</small>
+            <strong class="mono" id="discountApplied">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small><span class="highlight">Guest pays (final extra)</span></small>
+            <strong class="mono" id="finalExtra">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small>Your commission (10%)</small>
+            <strong class="mono" id="commission">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small>Effective Premier total</small>
+            <strong class="mono" id="effectivePremier">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small>Savings vs public Premier</small>
+            <strong class="mono" id="savingVsPublic">£0.00</strong>
+          </div>
+        </div>
+        <div class="hr"></div>
+        <div class="totals">
+          <div class="stat">
+            <small>Extra per night (final)</small>
+            <strong class="mono" id="extraPerNight">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small>Booked avg per night</small>
+            <strong class="mono" id="outBookedPerNight">£0.00</strong>
+          </div>
+          <div class="stat">
+            <small>Premier avg per night (effective)</small>
+            <strong class="mono" id="premierAvg">£0.00</strong>
+          </div>
+        </div>
+        <div id="publicInfo" class="footer"></div>
+      </div>
     </div>
+
+    <p class="footer">This tool does not store any data. All numbers are calculated in your browser.
+      For live rates, paste the public Premier total from Booking.com for the same dates/occupancy.
+    </p>
   </div>
 
 <script>
-/* ========= Utility ========= */
-const £ = (n)=> isFinite(n) ? "£" + Number(n).toFixed(2) : "£0.00";
-const clamp = (v,min,max)=> Math.min(Math.max(v,min),max);
+(function(){
+  const el = id=>document.getElementById(id);
+  const fmt = n=>`£${(isFinite(n)?n:0).toFixed(2)}`;
 
-function fmtDate(d){
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
-}
-function addDays(iso, days){
-  const d = new Date(iso);
-  d.setDate(d.getDate()+days);
-  return fmtDate(d);
-}
-function diffNights(ci, co){
-  const a = new Date(ci);
-  const b = new Date(co);
-  const ms = b - a;
-  return Math.max(1, Math.round(ms / (1000*60*60*24)));
-}
-function isPremier(code){ return ["PS","PD","PTWN","PTRP","PQUAD","PK"].includes(code); }
+  const checkin = el('checkin');
+  const checkout = el('checkout');
+  const nights = el('nights');
+  const bookedTotal = el('bookedTotal');
+  const bookedPerNight = el('bookedPerNight');
+  const outBookedPerNight = el('outBookedPerNight');
+  const ladderPerNight = el('ladderPerNight');
+  const ladderDiscountPct = el('ladderDiscountPct');
+  const publicPremierTotal = el('publicPremierTotal');
+  const publicPremierPerNight = el('publicPremierPerNight');
+  const diffDiscountPct = el('diffDiscountPct');
+  const bookingUrl = el('bookingUrl');
+  const customExtra = el('customExtra');
 
-/* ========= Fixed upgrade mapping (EXACT values) ========= */
-const FIXED = {
-  "CS": { "PS":60, "PD":90, "PTWN":90, "PTRP":150, "PQUAD":180, "PK":200 },
-  "CD": { "PS":40, "PD":70, "PTWN":70, "PTRP":130, "PQUAD":160, "PK":180 },
-  "CT": { "PS":40, "PD":70, "PTWN":70, "PTRP":130, "PQUAD":160, "PK":180 },
-  "DD": { "PS":20, "PD":50, "PTWN":50, "PTRP":110, "PQUAD":140, "PK":160 },
-  "CTRP": { "PTRP":60, "PQUAD":90, "PK":110 },
-  "CQUAD": { "PS":30, "PTRP":60, "PQUAD":90, "PK":110 },
-  "SUITE": { "PQUAD":40, "PK":60 }
-};
-function getFixedPerNight(from,to){
-  return (FIXED[from] && typeof FIXED[from][to] === "number") ? FIXED[from][to] : 0;
-}
+  const extraBefore = el('extraBefore');
+  const discountApplied = el('discountApplied');
+  const finalExtra = el('finalExtra');
+  const commission = el('commission');
+  const effectivePremier = el('effectivePremier');
+  const savingVsPublic = el('savingVsPublic');
+  const extraPerNight = el('extraPerNight');
+  const premierAvg = el('premierAvg');
+  const publicInfo = el('publicInfo');
+  const ladderLabel = el('ladderLabel');
 
-/* ========= Elements ========= */
-const el = {
-  checkin: document.getElementById('checkin'),
-  checkout: document.getElementById('checkout'),
-  nights: document.getElementById('nights'),
-  fromRoom: document.getElementById('fromRoom'),
-  toRoom: document.getElementById('toRoom'),
-  bookedTotal: document.getElementById('bookedTotal'),
-  publicTargetTotal: document.getElementById('publicTargetTotal'),
-  discountPublic: document.getElementById('discountPublic'),
-  discountPublicVal: document.getElementById('discountPublicVal'),
-  modePublic: document.getElementById('modePublic'),
-  modeFixed: document.getElementById('modeFixed'),
-  modeCustom: document.getElementById('modeCustom'),
-  fixedPerNight: document.getElementById('fixedPerNight'),
-  fixedNote: document.getElementById('fixedNote'),
-  discountFixed: document.getElementById('discountFixed'),
-  discountFixedVal: document.getElementById('discountFixedVal'),
-  customFinalExtra: document.getElementById('customFinalExtra'),
-  extraBefore: document.getElementById('extraBefore'),
-  discountApplied: document.getElementById('discountApplied'),
-  finalExtra: document.getElementById('finalExtra'),
-  finalExtraPerNight: document.getElementById('finalExtraPerNight'),
-  commission: document.getElementById('commission'),
-  commissionPerNight: document.getElementById('commissionPerNight'),
-  effectiveTarget: document.getElementById('effectiveTarget'),
-  savings: document.getElementById('savings'),
-  savingsPerNight: document.getElementById('savingsPerNight'),
-  extraBeforePerNight: document.getElementById('extraBeforePerNight'),
-  discountPerNight: document.getElementById('discountPerNight'),
-  targetCode: document.getElementById('targetCode'),
-  noCommissionNote: document.getElementById('noCommissionNote'),
-  commissionPill: document.getElementById('commissionPill'),
-  printBtn: document.getElementById('printBtn'),
-  fetchLive: document.getElementById('fetchLive'),
-  syncFromDates: document.getElementById('syncFromDates'),
-  syncFromNights: document.getElementById('syncFromNights'),
-  resetDefaults: document.getElementById('resetDefaults')
-};
-
-/* ========= Defaults ========= */
-function setDateConstraints(){
+  // Set demo defaults from the user's scenario
   const today = new Date();
-  const min = fmtDate(today);
-  el.checkin.min = min;
-  el.checkout.min = min;
-}
-function setDefaultValues(){
-  // Dates: today + 5 nights
-  const today = fmtDate(new Date());
-  el.checkin.value = today;
-  el.checkout.value = addDays(today, 5);
-  el.nights.value = 5;
+  const inDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+14);
+  const outDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+19);
+  checkin.valueAsDate = inDate;
+  checkout.valueAsDate = outDate;
 
-  // Rooms
-  el.fromRoom.value = "CD";     // Classic Double
-  el.toRoom.value = "PD";       // Premier Double
-
-  // Public mode defaults
-  el.bookedTotal.value = 491;
-  el.publicTargetTotal.value = 811;
-  el.discountPublic.value = 0;
-  el.discountPublicVal.textContent = 0;
-
-  // Fixed mode defaults (autofill from mapping)
-  updateFixedRateNote();
-
-  el.discountFixed.value = 0;
-  el.discountFixedVal.textContent = 0;
-
-  // Custom mode default
-  el.customFinalExtra.value = 200;
-
-  // Radio default
-  el.modePublic.checked = true;
-
-  compute();
-}
-
-/* ========= Events & Logic ========= */
-function updateNightsFromDates(){
-  const n = diffNights(el.checkin.value, el.checkout.value);
-  el.nights.value = n;
-}
-function updateDatesFromNights(){
-  const ci = el.checkin.value;
-  const n = Math.max(1, parseInt(el.nights.value || "1", 10));
-  el.checkout.value = addDays(ci, n);
-}
-function updateFixedRateNote(){
-  const from = el.fromRoom.value;
-  const to = el.toRoom.value;
-  const val = getFixedPerNight(from, to);
-  el.fixedPerNight.value = val;
-  if(val === 0){
-    el.fixedNote.textContent = "No fixed rate for this pair";
-  } else {
-    el.fixedNote.textContent = `Mapped from ${from} → ${to}`;
-  }
-  // Also keep target code label fresh
-  el.targetCode.textContent = to;
-  // Commission pill visibility (target is always Premier in this tool, but keep robust)
-  const eligible = isPremier(to);
-  el.noCommissionNote.style.display = eligible ? 'none' : 'inline';
-  el.commissionPill.style.display = eligible ? 'inline-flex' : 'none';
-}
-
-/* Core compute according to selected mode */
-function compute(){
-  const nights = Math.max(1, parseInt(el.nights.value || "1", 10));
-  const to = el.toRoom.value;
-  const bookedTotal = Number(el.bookedTotal.value || 0);
-  const publicTargetTotal = Number(el.publicTargetTotal.value || 0);
-
-  let extra_before = 0;
-  let discount = 0;
-  let final_extra = 0;
-
-  if(el.modePublic.checked){
-    // Public rate difference
-    extra_before = Math.max(0, publicTargetTotal - bookedTotal);
-    const dPct = clamp(Number(el.discountPublic.value || 0), 0, 50) / 100;
-    discount = extra_before * dPct;
-    final_extra = Math.max(0, extra_before - discount);
-  } else if(el.modeFixed.checked){
-    // Fixed per night (read-only) with discount
-    const perNight = Number(el.fixedPerNight.value || 0);
-    extra_before = Math.max(0, perNight * nights);
-    const dPct = clamp(Number(el.discountFixed.value || 0), 0, 50) / 100;
-    discount = extra_before * dPct;
-    final_extra = Math.max(0, extra_before - discount);
-  } else {
-    // Custom: use provided final extra directly
-    final_extra = Math.max(0, Number(el.customFinalExtra.value || 0));
-    // Back-compute a nominal "extra before" and "discount" just for display:
-    // We'll treat discount as 0 and extra_before as final in custom mode (simplest/clear)
-    extra_before = final_extra;
-    discount = 0;
+  function daysBetween(){
+    if(!checkin.value || !checkout.value) return +nights.value||1;
+    const a = new Date(checkin.value), b = new Date(checkout.value);
+    const ms = (b - a) / (1000*60*60*24);
+    return Math.max(1, Math.round(ms));
   }
 
-  const commissionEligible = isPremier(to);
-  const commission = commissionEligible ? final_extra * 0.10 : 0;
-
-  const effectiveTargetTotal = bookedTotal + final_extra;
-
-  let savings = 0;
-  if(publicTargetTotal > 0){
-    savings = publicTargetTotal - effectiveTargetTotal; // can be negative
+  function syncNights(){
+    nights.value = daysBetween();
   }
+  checkin.addEventListener('change', syncNights);
+  checkout.addEventListener('change', syncNights);
 
-  // Per-night breakdowns (avoid division by zero)
-  const feNight = nights ? (final_extra / nights) : 0;
-  const commissionNight = nights ? (commission / nights) : 0;
-  const extraNight = nights ? (extra_before / nights) : 0;
-  const discountNight = nights ? (discount / nights) : 0;
-  const savingsNight = nights ? (savings / nights) : 0;
+  function syncBookedPerNight(){
+    const n = Math.max(1, +nights.value||1);
+    const t = +bookedTotal.value||0;
+    const p = t / n;
+    bookedPerNight.value = p.toFixed(2);
+    outBookedPerNight.textContent = fmt(p);
+  }
+  nights.addEventListener('input', syncBookedPerNight);
+  bookedTotal.addEventListener('input', syncBookedPerNight);
 
-  // Update UI
-  el.extraBefore.textContent = £(extra_before);
-  el.discountApplied.textContent = £(discount);
-  el.finalExtra.textContent = £(final_extra);
-  el.finalExtraPerNight.textContent = £(feNight);
-  el.commission.textContent = £(commission);
-  el.commissionPerNight.textContent = £(commissionNight);
-  el.effectiveTarget.textContent = £(effectiveTargetTotal);
-  el.savings.textContent = £(savings);
-  el.savingsPerNight.textContent = £(savingsNight);
-  el.extraBeforePerNight.textContent = £(extraNight);
-  el.discountPerNight.textContent = £(discountNight);
-}
+  function syncPublicPerNight(){
+    const n = Math.max(1, +nights.value||1);
+    const t = +publicPremierTotal.value||0;
+    publicPremierPerNight.value = (t/n).toFixed(2);
+  }
+  publicPremierTotal.addEventListener('input', syncPublicPerNight);
+  nights.addEventListener('input', syncPublicPerNight);
 
-/* ========= Live fetch (optional) ========= */
-async function fetchLiveRates(){
-  const checkin = el.checkin.value;
-  const checkout = el.checkout.value;
-  const url = `/api/booking?checkin=${checkin}&checkout=${checkout}&adults=2`;
-  try{
-    const res = await fetch(url);
-    if(!res.ok){
-      throw new Error(`HTTP ${res.status}`);
+  function setBasisVisibility(){
+    const val = document.querySelector('input[name="basis"]:checked').value;
+    document.getElementById('basis-ladder').style.display = (val==='ladder')?'' : 'none';
+    document.getElementById('basis-difference').style.display = (val==='difference')?'' : 'none';
+    document.getElementById('basis-custom').style.display = (val==='custom')?'' : 'none';
+  }
+  document.querySelectorAll('input[name="basis"]').forEach(r=>r.addEventListener('change', setBasisVisibility));
+
+  function updateLadderLabel(){
+    const from = el('fromRoom').value.split(' ')[0];
+    const to = el('toRoom').value.split(' ')[0];
+    ladderLabel.textContent = `${from} → ${to}`;
+  }
+  el('fromRoom').addEventListener('change', updateLadderLabel);
+  el('toRoom').addEventListener('change', updateLadderLabel);
+  updateLadderLabel();
+
+  function calculate(){
+    const n = Math.max(1, +nights.value||1);
+    const bookedTotalVal = +bookedTotal.value||0;
+    const bookedPN = bookedTotalVal / n;
+
+    const basis = document.querySelector('input[name="basis"]:checked').value;
+
+    let extraBasis = 0;   // extra before discount
+    let discount = 0;     // discount amount
+    let final = 0;        // final extra to pay
+
+    if(basis==='ladder'){
+      const ladderPN = +ladderPerNight.value||0;
+      const pct = Math.min(100, Math.max(0, +ladderDiscountPct.value||0));
+      extraBasis = ladderPN * n;
+      discount = extraBasis * (pct/100);
+      final = Math.max(0, extraBasis - discount);
     }
-    const data = await res.json();
-    if(data && typeof data.premierTotal === "number"){
-      el.publicTargetTotal.value = data.premierTotal;
-      // Switch to public mode if not already
-      el.modePublic.checked = true;
-      compute();
+    else if(basis==='difference'){
+      const pubTotal = +publicPremierTotal.value||0;
+      const diffTotal = Math.max(0, pubTotal - bookedTotalVal);
+      const pct = Math.min(100, Math.max(0, +diffDiscountPct.value||0));
+      extraBasis = diffTotal;
+      discount = extraBasis * (pct/100);
+      final = Math.max(0, extraBasis - discount);
+    }
+    else if(basis==='custom'){
+      final = Math.max(0, +customExtra.value||0);
+      extraBasis = final; // for display, treat as basis
+      discount = 0;       // unknown; could be inferred if a ladder is provided
+    }
+
+    const commissionVal = final * 0.10; // 10%
+    const effectivePremierTotal = bookedTotalVal + final;
+
+    // If public rate provided, compute saving vs public
+    const pubTotal = +publicPremierTotal.value||0;
+    const saving = (pubTotal>0) ? Math.max(0, pubTotal - effectivePremierTotal) : 0;
+
+    // Update UI
+    extraBefore.textContent = fmt(extraBasis);
+    discountApplied.textContent = fmt(discount);
+    finalExtra.textContent = fmt(final);
+    commission.textContent = fmt(commissionVal);
+    effectivePremier.textContent = fmt(effectivePremierTotal);
+
+    const extraPN = final / Math.max(1, n);
+    extraPerNight.textContent = fmt(extraPN);
+    premierAvg.textContent = fmt(effectivePremierTotal / Math.max(1, n));
+
+    savingVsPublic.textContent = fmt(saving);
+
+    // Public info footer
+    if(pubTotal>0){
+      publicInfo.innerHTML = `Public Premier total: <span class="mono">${fmt(pubTotal)}</span>` +
+        (bookingUrl.value?` · <a class="link" href="${bookingUrl.value}" target="_blank" rel="noopener">Open Booking.com</a>`:'');
     } else {
-      alert("Live endpoint responded, but no { premierTotal } found. Please enter Public target total manually.");
+      publicInfo.textContent = '';
     }
-  }catch(err){
-    alert("No backend detected or request failed.\nYou can enter the 'Public target total' manually.\n\nError: " + err.message);
+  }
+
+  // Buttons
+  document.getElementById('calcBtn').addEventListener('click', calculate);
+  document.getElementById('resetBtn').addEventListener('click', ()=>{ window.location.reload(); });
+  document.getElementById('printBtn').addEventListener('click', ()=>{ window.print(); });
+
+  // Initial auto-calcs
+  syncNights();
+  syncBookedPerNight();
+  syncPublicPerNight();
+  calculate();
+})();
+</script>
+
+<script>
+// --- Premier-only tweaks, fixed-rate mapping, date limits, and UI fixes ---
+(function(){
+  const premierSet = new Set(['PS','PD','PTWN','PTRP','PQUAD','PK']);
+  const nonPremierSet = new Set(['CS','CD','CT','DD','CTRP','CQUAD','SUITE']);
+
+  // 1) Disable past dates + mark today
+  const today = new Date();
+  const toYMD = d=>d.toISOString().slice(0,10);
+  const ci = document.getElementById('ci');
+  const co = document.getElementById('co');
+  if(ci){ ci.min = toYMD(today); }
+  if(co){ co.min = toYMD(today); }
+
+  // 2) Dropdown: keep non-premier in FROM, premier in TO
+  const fromSel = document.getElementById('from2');
+  const toSel = document.getElementById('to2');
+  function filterOptions(){
+    if(!fromSel || !toSel) return;
+    [...fromSel.options].forEach(o=>{ o.hidden = !nonPremierSet.has(o.value); });
+    // If current value is not allowed, set a default
+    if(!nonPremierSet.has(fromSel.value)){
+      const first = [...fromSel.options].find(o=>!o.hidden);
+      if(first) fromSel.value = first.value;
+    }
+
+    [...toSel.options].forEach(o=>{ o.hidden = !premierSet.has(o.value); });
+    if(!premierSet.has(toSel.value)){
+      const firstP = [...toSel.options].find(o=>!o.hidden);
+      if(firstP) toSel.value = firstP.value;
+    }
+  }
+  filterOptions();
+
+  // 3) Retitle the "ladder" basis as "fixed" and align radios
+  const ladderRadio = document.querySelector('input[name="basis2"][value="ladder"]');
+  if(ladderRadio){
+    ladderRadio.setAttribute('data-mode','fixed');
+    // Change visible label text
+    const label = ladderRadio.closest('label');
+    if(label) label.lastChild.nodeValue = ' Fixed hotel rate (£/night)';
+  }
+
+  // 4) Fixed-rate mapping from your desk sheet (per night)
+  // Keys: FROM -> TO (Premier categories only). If missing, not allowed.
+  const FR = {
+    CS:   { PS:60,  PD:90,  PTWN:90,  PTRP:150, PQUAD:180, PK:200 },
+    CD:   { PS:40,  PD:70,  PTWN:70,  PTRP:130, PQUAD:160, PK:180 },
+    CT:   { PS:40,  PD:70,  PTWN:70,  PTRP:130, PQUAD:160, PK:180 },
+    DD:   { PS:20,  PD:50,  PTWN:50,  PTRP:110, PQUAD:140, PK:160 },
+    CTRP: {               PTRP:60,  PQUAD:90,  PK:110 },
+    CQUAD:{ PS:30,                PTRP:60,  PQUAD:90,  PK:110 },
+    SUITE:{                                   PQUAD:40,  PK:60 }
+  };
+
+  // Helper to resolve PD/PTWN combined target to either PD or PTWN
+  function isPremier(v){ return premierSet.has(v); }
+  function rateFor(from,to){
+    const map = FR[from]||{};
+    if(map[to]!=null) return map[to];
+    // treat PD/PTWN combined
+    if((to==='PD' || to==='PTWN')){
+      return map['PD'] ?? map['PTWN'] ?? null;
+    }
+    return null;
+  }
+
+  // 5) When basis=ladder (now fixed), auto-fill ladderPN2 from mapping
+  const ladderPN = document.getElementById('ladderPN2');
+  const fixedPct = document.getElementById('ladderPct2');
+  function updateFixedPN(){
+    if(!ladderPN) return;
+    const from = fromSel.value; const to = toSel.value;
+    const r = rateFor(from,to);
+    ladderPN.value = r!=null ? r : 0;
+    ladderPN.disabled = true; // fixed from sheet
+  }
+  ['change','input'].forEach(ev=>{
+    fromSel && fromSel.addEventListener(ev, ()=>{filterOptions();updateFixedPN();});
+    toSel && toSel.addEventListener(ev, ()=>{filterOptions();updateFixedPN();});
+  });
+  updateFixedPN();
+
+  // 6) Ensure the basis panes show/hide with our re-labeled option
+  function setBasisFixed(){
+    const val = document.querySelector('input[name="basis2"]:checked')?.value;
+    const paneDiff = document.getElementById('pane-diff');
+    const paneLadder = document.getElementById('pane-ladder');
+    const paneCustom = document.getElementById('pane-custom');
+    if(!paneDiff||!paneLadder||!paneCustom) return;
+    paneDiff.style.display = (val==='difference')?'' : 'none';
+    paneLadder.style.display = (val==='fixed' || val==='ladder')?'' : 'none';
+    paneCustom.style.display = (val==='custom')?'' : 'none';
+  }
+  document.querySelectorAll('input[name="basis2"]').forEach(r=>{
+    r.addEventListener('change', ()=>{
+      if(r.value==='fixed') r.value='ladder'; // keep original calc path
+      setBasisFixed();
+    });
+  });
+  setBasisFixed();
+
+  // 7) Style selects (white text on dark background is already added in CSS above)
+})();
+</script>
+
+</body>
+</html>
+
+
+<!-- ===================================================================
+  LIVE-RATE VERSION (Booking.com Demand API compliant)
+  - Frontend stays static (no login, no DB)
+  - Serverless endpoint /api/booking fetches live rates via official API
+  - No scraping (per Booking.com Terms). Provide your Affiliate credentials.
+  =================================================================== -->
+
+<!--
+  HOW TO DEPLOY QUICKLY (Vercel/Netlify/Render)
+  1) Keep this HTML file as your frontend (public/index.html).
+  2) Add the serverless file below as /api/booking.[js|ts].
+  3) Set environment variables:
+     BCOM_AFFILIATE_ID=xxxx
+     BCOM_API_TOKEN=xxxx
+     BCOM_PROPERTY_ID= (optional if you hardcode hotel search)
+  4) Open the app → enter dates → click "Fetch live". The endpoint will return
+     current totals per room-type for those dates for your property.
+-->
+
+<script>
+// Small addition: live rates via your serverless endpoint
+async function fetchLiveRatesViaAPI() {
+  const ci = document.getElementById('checkin').value;
+  const co = document.getElementById('checkout').value;
+  const adults = 2; // tweak as needed or add controls
+
+  try{
+    const res = await fetch(`/api/booking?checkin=${encodeURIComponent(ci)}&checkout=${encodeURIComponent(co)}&adults=${adults}`);
+    if(!res.ok) throw new Error('API error');
+    const data = await res.json();
+    // Expecting { bookedAvg, premierTotal, premierAvg, classicTotal, classicAvg, raw }
+    if(data.premierTotal){
+      document.getElementById('publicPremierTotal').value = Number(data.premierTotal).toFixed(2);
+      const event = new Event('input');
+      document.getElementById('publicPremierTotal').dispatchEvent(event);
+    }
+    if(data.classicTotal && !document.getElementById('bookedTotal').value){
+      document.getElementById('bookedTotal').value = Number(data.classicTotal).toFixed(2);
+      document.getElementById('bookedTotal').dispatchEvent(new Event('input'));
+    }
+    // Default to difference basis after fetching
+    document.querySelector('input[name="basis"][value="difference"]').checked = true;
+    (typeof setBasisVisibility==='function') && setBasisVisibility();
+  }catch(e){
+    alert('Could not fetch live rates. Please enter totals manually.');
   }
 }
-
-/* ========= Wiring ========= */
-function addListeners(){
-  // Dates & nights
-  el.checkin.addEventListener('change', ()=>{
-    if(new Date(el.checkout.value) <= new Date(el.checkin.value)){
-      el.checkout.value = addDays(el.checkin.value, Math.max(1, parseInt(el.nights.value||"1",10)));
-    }
-    updateNightsFromDates();
-    compute();
-  });
-  el.checkout.addEventListener('change', ()=>{ updateNightsFromDates(); compute(); });
-  el.nights.addEventListener('input', ()=>{ updateDatesFromNights(); compute(); });
-  el.syncFromDates.addEventListener('click', ()=>{ updateNightsFromDates(); compute(); });
-  el.syncFromNights.addEventListener('click', ()=>{ updateDatesFromNights(); compute(); });
-
-  // Rooms
-  el.fromRoom.addEventListener('change', ()=>{ updateFixedRateNote(); compute(); });
-  el.toRoom.addEventListener('change', ()=>{ updateFixedRateNote(); compute(); });
-
-  // Mode radios
-  [el.modePublic, el.modeFixed, el.modeCustom].forEach(r=> r.addEventListener('change', compute));
-
-  // Public inputs
-  el.bookedTotal.addEventListener('input', compute);
-  el.publicTargetTotal.addEventListener('input', compute);
-  el.discountPublic.addEventListener('input', ()=>{ el.discountPublicVal.textContent = el.discountPublic.value; compute(); });
-
-  // Fixed inputs
-  el.discountFixed.addEventListener('input', ()=>{ el.discountFixedVal.textContent = el.discountFixed.value; compute(); });
-
-  // Custom
-  el.customFinalExtra.addEventListener('input', compute);
-
-  // Actions
-  el.printBtn.addEventListener('click', ()=> window.print());
-  el.fetchLive.addEventListener('click', fetchLiveRates);
-  el.resetDefaults.addEventListener('click', ()=>{ setDefaultValues(); });
-}
-
-/* ========= Init ========= */
-setDateConstraints();
-setDefaultValues();
-addListeners();
-compute();
 </script>
+
+<style>
+  .actions .live {background:#7dd3fc}
+</style>
+
+<script>
+// Add a Live Rates button next to Calculate
+(function(){
+  const liveBtn = document.createElement('button');
+  liveBtn.textContent = 'Fetch Live (Booking.com API)';
+  liveBtn.className = 'live';
+  liveBtn.type = 'button';
+  liveBtn.addEventListener('click', fetchLiveRatesViaAPI);
+  document.querySelector('.actions').prepend(liveBtn);
+})();
+</script>
+
+<!-- =================== SERVERLESS ENDPOINT (Node 18+) ===================
+File: /api/booking.ts  (Vercel/Netlify/Cloudflare Workers compatible)
+NOTE: Uses Booking.com Demand API (Affiliate) — no scraping.
+Docs: https://developers.booking.com/demand/docs/open-api/demand-api/accommodations/accommodations/availability
+======================================================================== -->
+<script type="text/plain" data-filename="/api/booking.ts">
+export default async function handler(req, res){
+  const { checkin, checkout, adults = 2 } = req.query;
+  if(!checkin || !checkout){
+    res.status(400).json({ error: 'Missing checkin/checkout' });
+    return;
+  }
+
+  // Your Affiliate credentials (set in project env)
+  const AFFILIATE_ID = process.env.BCOM_AFFILIATE_ID;
+  const API_TOKEN    = process.env.BCOM_API_TOKEN;
+
+  if(!AFFILIATE_ID || !API_TOKEN){
+    return res.status(500).json({ error: 'Missing Booking.com Demand API credentials' });
+  }
+
+  // Property targeting: Berjaya Eden Park London Hotel
+  // If you already know the accommodation_id, set it here for accuracy.
+  const accommodation_id = process.env.BCOM_PROPERTY_ID; // e.g., 'berjaya-eden-park-london-12345' (example only)
+
+  try{
+    // Minimal Availability payload — see Demand API docs for full schema.
+    const payload:any = {
+      locale: 'en-gb',
+      currency: 'GBP',
+      occupancy: [{ adults: Number(adults), children: [] }],
+      stay: { checkin_date: checkin, checkout_date: checkout },
+    };
+
+    if(accommodation_id){
+      payload.accommodations = [{ id: accommodation_id }];
+    } else {
+      // Fallback search by destination name if you don’t have the property ID yet.
+      payload.search = { query: 'Berjaya Eden Park London Hotel', filter_by_type: 'accommodation' };
+    }
+
+    const r = await fetch('https://demandapi.booking.com/3.1/availability', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Booking-Api-Key': API_TOKEN,
+        'X-Booking-Affiliate-Id': AFFILIATE_ID,
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if(!r.ok){
+      const txt = await r.text();
+      return res.status(r.status).json({ error: 'Booking API error', details: txt });
+    }
+
+    const json = await r.json();
+    // Shape varies; we’ll walk results to find room options that look like
+    // Classic Double and Premier Double by name matching.
+
+    const nights = Math.max(1, Math.round((new Date(checkout).getTime()-new Date(checkin).getTime())/86400000));
+
+    let classicTotal: number | null = null;
+    let premierTotal: number | null = null;
+
+    const lower = (s:string)=> (s||'').toLowerCase();
+
+    const guessTotals = () => {
+      const offers = json?.accommodations?.[0]?.offers || json?.offers || [];
+      for(const off of offers){
+        const roomName = lower(off.room_name || off.name || '');
+        const total = Number(off?.price?.total?.amount || off?.price_breakdown?.total || off?.price?.total || 0);
+        if(!total) continue;
+        if(roomName.includes('classic') && roomName.includes('double')){
+          classicTotal = classicTotal==null ? total : Math.min(classicTotal, total);
+        }
+        if(roomName.includes('premier') && roomName.includes('double')){
+          premierTotal = premierTotal==null ? total : Math.min(premierTotal, total);
+        }
+      }
+    };
+
+    guessTotals();
+
+    const resp:any = { nights };
+    if(classicTotal!=null){
+      resp.classicTotal = Number(classicTotal.toFixed(2));
+      resp.classicAvg = Number((classicTotal/nights).toFixed(2));
+    }
+    if(premierTotal!=null){
+      resp.premierTotal = Number(premierTotal.toFixed(2));
+      resp.premierAvg = Number((premierTotal/nights).toFixed(2));
+    }
+
+    resp.raw = { count: (json?.accommodations?.[0]?.offers||json?.offers||[]).length };
+
+    return res.status(200).json(resp);
+  }catch(err:any){
+    return res.status(500).json({ error: 'Server error', details: err?.message||String(err) });
+  }
+}
+</script>
+
+<!-- Optional: vercel.json (so /api/booking.ts is picked up) -->
+<script type="text/plain" data-filename="vercel.json">
+{
+  "functions": { "api/*.ts": { "runtime": "nodejs18.x" } }
+}
+</script>
+
+
+<!-- ========================= V2 — DARK MODERN UI =========================
+ A fresh, hotel‑console style calculator with Premier‑only commission.
+ - No login, no DB. Runs in browser.
+ - Live rate fetch via Booking.com Demand API serverless endpoint (/api/booking).
+ - Commission is **only** applied when the *target* room is Premier tier (PS, PD, PTWN, PTRP, PQUAD, PK).
+============================================================================ -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Upgrade Calculator — Dark Modern</title>
+  <style>
+    :root{
+      --bg:#05070d; --panel:#0c1220; --panel2:#0e1626; --muted:#9fb0c7; --text:#e9f1ff; --brand:#72b7ff; --brand2:#3aa9ff; --ok:#55d88a; --warn:#ffcc66; --danger:#ff6b6b;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(80% 60% at 70% 0%, #0f1c34 0%, #070b14 40%, #05070d 100%) fixed;color:var(--text);font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial}
+    .wrap{max-width:1200px;margin:28px auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo .mark{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand2));box-shadow:0 8px 24px rgba(58,169,255,.25)}
+    h1{font-size:clamp(22px,3.2vw,30px);margin:0}
+    .sub{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:1.15fr 1fr;gap:16px}
+    @media (max-width:1000px){.grid{grid-template-columns:1fr}}
+    .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    .card h2{font-size:16px;margin:0 0 10px;color:#cfe4ff}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:760px){.row{grid-template-columns:1fr}}
+    label{display:block;font-size:12px;color:var(--muted);margin:6px 0 6px}
+    input,select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.06);color:var(--text)}
+    input[type="range"]{padding:0}
+    .inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .chip{padding:5px 9px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);font-size:12px;color:var(--muted)}
+    .hr{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);margin:12px 0}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    button{appearance:none;border:none;border-radius:10px;padding:11px 14px;font-weight:600;cursor:pointer}
+    .b-primary{background:linear-gradient(180deg,var(--brand),var(--brand2));color:#031023}
+    .b-secondary{background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.12)}
+    .b-ghost{background:transparent;color:var(--muted);border:1px dashed rgba(255,255,255,.2)}
+    .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    @media (max-width:1000px){.stats{grid-template-columns:1fr 1fr}}
+    @media (max-width:640px){.stats{grid-template-columns:1fr}}
+    .stat{padding:14px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+    .stat small{display:block;color:var(--muted)}
+    .stat strong{font-size:22px}
+    .mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Consolas,Menlo,monospace}
+    .flag{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:12px}
+    .flag.ok{background:rgba(85,216,138,.08);border:1px solid rgba(85,216,138,.25);color:var(--ok)}
+    .flag.warn{background:rgba(255,204,102,.08);border:1px solid rgba(255,204,102,.25);color:var(--warn)}
+    .flag.no{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.25);color:var(--danger)}
+    .footer{opacity:.8;font-size:12px;margin-top:8px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo"><div class="mark"></div>
+        <div>
+          <h1>Premier Upgrade Calculator</h1>
+          <div class="sub">Dark‑modern UI · Live public rate compare · Commission only for Premier rooms</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Stay & Pricing</h2>
+        <div class="row">
+          <div>
+            <label>Check‑in</label>
+            <input type="date" id="ci" />
+          </div>
+          <div>
+            <label>Check‑out</label>
+            <input type="date" id="co" />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Nights (auto)</label>
+            <input type="number" id="nights2" min="1" value="5" />
+          </div>
+          <div>
+            <label>Currency</label>
+            <select id="cur"><option>GBP £</option></select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>From (Booked room)</label>
+            <select id="from2"></select>
+          </div>
+          <div>
+            <label>To (Target room)</label>
+            <select id="to2"></select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label>Booked total for stay</label>
+            <input id="bookedTotal2" type="number" step="0.01" value="491" />
+          </div>
+          <div>
+            <label>Booked avg / night (auto)</label>
+            <input id="bookedAvg2" type="number" step="0.01" disabled />
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <h2>Price basis</h2>
+        <div class="inline" style="margin-bottom:10px">
+          <span class="chip"><input type="radio" name="basis2" value="difference" checked> Public rate difference</span>
+          <span class="chip"><input type="radio" name="basis2" value="ladder"> Internal ladder (£/night)</span>
+          <span class="chip"><input type="radio" name="basis2" value="custom"> Enter final extra</span>
+        </div>
+
+        <div id="pane-diff" class="card" style="padding:12px;margin-bottom:10px">
+          <div class="row">
+            <div>
+              <label>Public target total (Booking.com)</label>
+              <input id="publicTargetTotal" type="number" step="0.01" value="811" />
+            </div>
+            <div>
+              <label>Discount % (off the difference)</label>
+              <input id="diffPct2" type="range" min="0" max="50" value="0" oninput="this.nextElementSibling.value=this.value+'%';" />
+              <output style="margin-left:8px;vertical-align:middle">0%</output>
+            </div>
+          </div>
+          <div class="btns"><button class="b-secondary" id="liveBtn2">Fetch live (Booking.com)</button></div>
+        </div>
+
+        <div id="pane-ladder" class="card" style="display:none;padding:12px;margin-bottom:10px">
+          <div class="row">
+            <div>
+              <label>Upgrade £ / night</label>
+              <input id="ladderPN2" type="number" step="0.01" value="40" />
+            </div>
+            <div>
+              <label>Discount % (off ladder)</label>
+              <input id="ladderPct2" type="range" min="0" max="50" value="0" oninput="this.nextElementSibling.value=this.value+'%';" />
+              <output>0%</output>
+            </div>
+          </div>
+        </div>
+
+        <div id="pane-custom" class="card" style="display:none;padding:12px;margin-bottom:10px">
+          <div class="row">
+            <div>
+              <label>Final extra (total)</label>
+              <input id="customExtra2" type="number" step="0.01" value="200" />
+            </div>
+            <div>
+              <label>Note</label>
+              <input id="note2" type="text" placeholder="Manager approved / Busy night" />
+            </div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button class="b-primary" id="calc2">Calculate</button>
+          <button class="b-secondary" id="print2" type="button">Print / PDF</button>
+          <button class="b-ghost" id="reset2" type="button">Reset</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Results</h2>
+        <div class="inline" id="premierFlag"></div>
+        <div class="stats" style="margin-top:10px">
+          <div class="stat"><small>Extra before discount</small><strong class="mono" id="s_extraBefore2">£0.00</strong></div>
+          <div class="stat"><small>Discount applied</small><strong class="mono" id="s_discount2">£0.00</strong></div>
+          <div class="stat"><small>Guest pays (final extra)</small><strong class="mono" id="s_final2">£0.00</strong></div>
+          <div class="stat"><small>Your commission (10% if Premier)</small><strong class="mono" id="s_comm2">£0.00</strong></div>
+          <div class="stat"><small>Effective target total</small><strong class="mono" id="s_effective2">£0.00</strong></div>
+          <div class="stat"><small>Savings vs public target</small><strong class="mono" id="s_save2">£0.00</strong></div>
+        </div>
+        <div class="hr"></div>
+        <div class="stats">
+          <div class="stat"><small>Extra per night</small><strong class="mono" id="s_extraPN2">£0.00</strong></div>
+          <div class="stat"><small>Booked avg / night</small><strong class="mono" id="s_bookedAvg2">£0.00</strong></div>
+          <div class="stat"><small>Target avg / night (effective)</small><strong class="mono" id="s_targetAvg2">£0.00</strong></div>
+        </div>
+        <div class="footer" id="publicInfo2"></div>
+      </div>
+    </div>
+
+    <div class="footer">This tool does not store any data. Live rates via official Booking.com Demand API endpoint when credentials are configured; otherwise enter totals manually.</div>
+  </div>
+
+<script>
+(function(){
+  const premierSet = new Set(['PS','PD','PTWN','PTRP','PQUAD','PK']);
+  const roomOptions = [
+    ['CS','Classic Single'],
+    ['CD','Classic Double'],
+    ['CT','Classic Twin'],
+    ['DD','Deluxe Double'],
+    ['CTRP','Classic Triple'],
+    ['CQUAD','Classic Quad'],
+    ['SUITE','Suite'],
+    ['PS','Premier Single'],
+    ['PD','Premier Double'],
+    ['PTWN','Premier Twin'],
+    ['PTRP','Premier Triple'],
+    ['PQUAD','Premier Quad'],
+    ['PK','Premier King']
+  ];
+
+  const $ = id=>document.getElementById(id);
+  const fmt = n=>`£${(isFinite(n)?n:0).toFixed(2)}`;
+
+  // Populate selects
+  const fromSel = $('from2'), toSel = $('to2');
+  roomOptions.forEach(([v,t])=>{
+    const o1 = document.createElement('option'); o1.value=v; o1.textContent=`${t} (${v})`; fromSel.appendChild(o1);
+    const o2 = document.createElement('option'); o2.value=v; o2.textContent=`${t} (${v})`; toSel.appendChild(o2);
+  });
+  fromSel.value='CD'; toSel.value='PD';
+
+  // Dates demo
+  const today = new Date();
+  const ci = $('ci'), co = $('co');
+  ci.valueAsDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+14);
+  co.valueAsDate = new Date(today.getFullYear(), today.getMonth(), today.getDate()+19);
+
+  function nightsCalc(){
+    const n = Math.max(1, Math.round((new Date(co.value)-new Date(ci.value))/(1000*60*60*24))|| +$('nights2').value||1);
+    $('nights2').value = n;
+    return n;
+  }
+  ci.addEventListener('change', nightsCalc); co.addEventListener('change', nightsCalc);
+
+  function syncBookedAvg(){
+    const n = Math.max(1, +$('nights2').value||1);
+    const t = +$('bookedTotal2').value||0;
+    const p = t/n; $('bookedAvg2').value = p.toFixed(2); $('s_bookedAvg2').textContent = fmt(p);
+  }
+  $('nights2').addEventListener('input', syncBookedAvg);
+  $('bookedTotal2').addEventListener('input', syncBookedAvg);
+
+  function setBasis(){
+    const val = document.querySelector('input[name="basis2"]:checked').value;
+    $('pane-diff').style.display = val==='difference'?'':'none';
+    $('pane-ladder').style.display = val==='ladder'?'':'none';
+    $('pane-custom').style.display = val==='custom'?'':'none';
+  }
+  document.querySelectorAll('input[name="basis2"]').forEach(r=>r.addEventListener('change', setBasis));
+
+  function renderPremierFlag(){
+    const isPremier = premierSet.has(toSel.value);
+    $('premierFlag').innerHTML = isPremier
+      ? '<span class="flag ok">Premier upgrade — commission eligible</span>'
+      : '<span class="flag no">Non‑Premier target — no commission</span>';
+  }
+  toSel.addEventListener('change', renderPremierFlag); renderPremierFlag();
+
+  async function fetchLive(){
+    // Uses the serverless endpoint appended earlier in the file (/api/booking.ts)
+    const params = new URLSearchParams({ checkin: $('ci').value, checkout: $('co').value, adults: '2' });
+    try{
+      const res = await fetch(`/api/booking?${params.toString()}`);
+      if(!res.ok) throw new Error('API error');
+      const data = await res.json();
+      if(data && data.premierTotal){
+        $('publicTargetTotal').value = Number(data.premierTotal).toFixed(2);
+        $('publicTargetTotal').dispatchEvent(new Event('input'));
+      }
+      document.querySelector('input[name="basis2"][value="difference"]').checked = true; setBasis();
+      calc();
+    }catch(e){ alert('Could not fetch live rates. Enter public total manually.'); }
+  }
+  $('liveBtn2').addEventListener('click', fetchLive);
+
+  function calc(){
+    const n = Math.max(1, +$('nights2').value||nightsCalc());
+    const bookedTotal = +$('bookedTotal2').value||0;
+    const bookedAvg = bookedTotal/n;
+
+    const basis = document.querySelector('input[name="basis2"]:checked').value;
+    let basisExtra=0, disc=0, final=0;
+
+    if(basis==='difference'){
+      const pubTarget = +$('publicTargetTotal').value||0;
+      basisExtra = Math.max(0, pubTarget - bookedTotal);
+      disc = basisExtra * ((+$('diffPct2').value||0)/100);
+      final = Math.max(0, basisExtra - disc);
+      $('publicInfo2').textContent = pubTarget?`Public target total: ${fmt(pubTarget)}`:'';
+    }
+    if(basis==='ladder'){
+      const perN = +$('ladderPN2').value||0; basisExtra = perN*n; disc = basisExtra*((+$('ladderPct2').value||0)/100); final=Math.max(0,basisExtra-disc);
+      $('publicInfo2').textContent = '';
+    }
+    if(basis==='custom'){
+      final = Math.max(0, +$('customExtra2').value||0); basisExtra = final; disc=0; $('publicInfo2').textContent='';
+    }
+
+    const effectiveTarget = bookedTotal + final;
+    const extraPN = final/n;
+
+    // Commission only if target is Premier
+    const isPremier = premierSet.has(toSel.value);
+    const comm = isPremier ? final*0.10 : 0;
+
+    // If public total exists, compute saving
+    const pubT = +$('publicTargetTotal').value||0; const save = pubT? Math.max(0, pubT - effectiveTarget):0;
+
+    $('s_extraBefore2').textContent = fmt(basisExtra);
+    $('s_discount2').textContent = fmt(disc);
+    $('s_final2').textContent = fmt(final);
+    $('s_comm2').textContent = fmt(comm);
+    $('s_effective2').textContent = fmt(effectiveTarget);
+    $('s_save2').textContent = fmt(save);
+    $('s_extraPN2').textContent = fmt(extraPN);
+    $('s_targetAvg2').textContent = fmt(effectiveTarget/n);
+    $('s_bookedAvg2').textContent = fmt(bookedAvg);
+
+    renderPremierFlag();
+  }
+
+  $('calc2').addEventListener('click', calc);
+  $('print2').addEventListener('click', ()=>window.print());
+  $('reset2').addEventListener('click', ()=>window.location.reload());
+
+  nightsCalc(); syncBookedAvg(); calc();
+})();
+</script>
+
 </body>
 </html>
